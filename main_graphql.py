@@ -1,15 +1,16 @@
+import strawberry
 import uvicorn
 from fastapi import FastAPI
-from strawberry.asgi import GraphQL
-import strawberry
-from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from strawberry.asgi import GraphQL
 
 app = FastAPI()
 
 engine = create_engine("sqlite:///./users.db")
 Base = declarative_base()
+
 
 class User(Base):
     __tablename__ = "users"
@@ -17,14 +18,17 @@ class User(Base):
     name = Column(String)
     age = Column(Integer)
 
+
 Base.metadata.create_all(bind=engine)
 Session = sessionmaker(bind=engine)
+
 
 @strawberry.type
 class UserType:
     id: int
     name: str
     age: int
+
 
 @strawberry.type
 class Query:
@@ -42,6 +46,7 @@ class Query:
         db.close()
         return [UserType(id=user.id, name=user.name, age=user.age) for user in users]
 
+
 @strawberry.type
 class Mutation:
     @strawberry.mutation(name="createUser")
@@ -53,6 +58,7 @@ class Mutation:
         db.refresh(user)
         db.close()
         return UserType(id=user.id, name=user.name, age=user.age)
+
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)
 app.add_route("/", GraphQL(schema))
